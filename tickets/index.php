@@ -3,7 +3,7 @@ session_start();
 require_once '../config.php';
 
 if (!isset($_SESSION['user_id'])) {
-    header('Location: /Reper_hub/auth/login.php');
+    header("Location: " . APP_URL . "/auth/login.php");
     exit;
 }
 

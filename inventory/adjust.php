@@ -1,7 +1,7 @@
 <?php
 session_start();
 require_once '../config.php';
-if (!isset($_SESSION['user_id'])) { header('Location: /Reper_hub/auth/login.php'); exit; }
+if (!isset($_SESSION['user_id'])) { header("Location: " . APP_URL . "/auth/login.php"); exit; }
 
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));

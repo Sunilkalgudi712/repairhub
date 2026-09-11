@@ -77,7 +77,7 @@ include '../includes/client_sidebar.php';
                                             <span class="badge <?= $invBadge ?>"><?= htmlspecialchars($invoice['status']) ?></span>
                                         </td>
                                         <td class="text-end pe-4">
-                                            <a href="/Reper_hub/invoices/print.php?id=<?= $invoice['id'] ?>" target="_blank" class="btn btn-sm btn-outline-primary"><i class="fas fa-print me-1"></i> View / Print</a>
+                                            <a href="<?= APP_URL ?>/invoices/print.php?id=<?= $invoice['id'] ?>" target="_blank" class="btn btn-sm btn-outline-primary"><i class="fas fa-print me-1"></i> View / Print</a>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>

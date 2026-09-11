@@ -1,7 +1,7 @@
 <?php
 session_start();
 require_once '../config.php';
-if (!isset($_SESSION['user_id'])) { header('Location: /Reper_hub/auth/login.php'); exit; }
+if (!isset($_SESSION['user_id'])) { header("Location: " . APP_URL . "/auth/login.php"); exit; }
 
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
@@ -57,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pdo->commit();
         $_SESSION['flash_message'] = 'Purchase created successfully.';
         $_SESSION['flash_type'] = 'success';
-        header('Location: /Reper_hub/purchases/index.php');
+        header("Location: " . APP_URL . "/purchases/index.php");
         exit;
     } catch (Exception $e) {
         $pdo->rollBack();
@@ -76,7 +76,7 @@ include '../includes/sidebar.php';
   <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3"><?= htmlspecialchars($pageTitle) ?></h1>
-        <a href="/Reper_hub/purchases/index.php" class="btn btn-outline-secondary">Back to List</a>
+        <a href="<?= APP_URL ?>/purchases/index.php" class="btn btn-outline-secondary">Back to List</a>
     </div>
 
     <?php if (isset($error)): ?>

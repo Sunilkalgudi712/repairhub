@@ -1,7 +1,7 @@
 <?php
 session_start();
 require_once '../config.php';
-if (!isset($_SESSION['user_id'])) { header('Location: /Reper_hub/auth/login.php'); exit; }
+if (!isset($_SESSION['user_id'])) { header("Location: " . APP_URL . "/auth/login.php"); exit; }
 
 $pageTitle = 'Invoices';
 include '../includes/header.php';
@@ -195,7 +195,7 @@ $invoices = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 <td><?= htmlspecialchars($inv['customer_name'] ?? 'Unknown') ?></td>
                                 <td>
                                     <?php if (!empty($inv['ticket_id'])): ?>
-                                    <a href="/Reper_hub/tickets/view.php?id=<?= $inv['ticket_id'] ?>">#<?= htmlspecialchars($inv['ticket_id']) ?></a>
+                                    <a href="<?= APP_URL ?>/tickets/view.php?id=<?= $inv['ticket_id'] ?>">#<?= htmlspecialchars($inv['ticket_id']) ?></a>
                                     <?php else: ?>
                                     -
                                     <?php endif; ?>

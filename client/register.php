@@ -5,9 +5,9 @@ require_once '../config.php';
 // If already logged in, redirect based on role
 if (isset($_SESSION['user_id'])) {
     if ($_SESSION['role'] === 'Client') {
-        header('Location: /Reper_hub/client/dashboard.php');
+        header("Location: " . APP_URL . "/client/dashboard.php");
     } else {
-        header('Location: /Reper_hub/dashboard.php');
+        header("Location: " . APP_URL . "/dashboard.php");
     }
     exit;
 }
@@ -57,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['flash_message'] = 'Registration successful. Welcome!';
                 $_SESSION['flash_type'] = 'success';
 
-                header('Location: /Reper_hub/client/dashboard.php');
+                header("Location: " . APP_URL . "/client/dashboard.php");
                 exit;
             } catch (Exception $e) {
                 $pdo->rollBack();
@@ -75,7 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Customer Registration - RepairHub</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/Reper_hub/assets/css/style.css">
+    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/style.css">
     <style>
         .auth-wrapper { min-height: 100vh; display: flex; align-items: center; justify-content: center; background-color: #f8f9fa; }
         .auth-card { max-width: 450px; width: 100%; padding: 2rem; border: none; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); background-color: #fff; }
@@ -118,7 +118,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </form>
             
             <div class="text-center">
-                <p class="mb-0">Already have an account? <a href="/Reper_hub/auth/login.php" class="text-decoration-none">Sign In</a></p>
+                <p class="mb-0">Already have an account? <a href="<?= APP_URL ?>/auth/login.php" class="text-decoration-none">Sign In</a></p>
             </div>
         </div>
     </div>

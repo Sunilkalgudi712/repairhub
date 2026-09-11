@@ -1,7 +1,7 @@
 <?php
 session_start();
 require_once '../config.php';
-if (!isset($_SESSION['user_id'])) { header('Location: /Reper_hub/auth/login.php'); exit; }
+if (!isset($_SESSION['user_id'])) { header("Location: " . APP_URL . "/auth/login.php"); exit; }
 
 $pageTitle = 'Purchases';
 include '../includes/header.php';
@@ -28,7 +28,7 @@ $purchases = $stmt->fetchAll();
   <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3"><?= htmlspecialchars($pageTitle) ?></h1>
-        <a href="/Reper_hub/purchases/create.php" class="btn btn-primary"><i class="fas fa-plus"></i> New Purchase</a>
+        <a href="<?= APP_URL ?>/purchases/create.php" class="btn btn-primary"><i class="fas fa-plus"></i> New Purchase</a>
     </div>
 
     <!-- flash messages -->
@@ -77,7 +77,7 @@ $purchases = $stmt->fetchAll();
                                     <td><?= htmlspecialchars($p['payment_status'] ?? 'Pending') ?></td>
                                     <td><?= htmlspecialchars(date('d M Y', strtotime($p['created_at']))) ?></td>
                                     <td>
-                                        <a href="/Reper_hub/purchases/view.php?id=<?= $p['id'] ?>" class="btn btn-sm btn-outline-secondary">View</a>
+                                        <a href="<?= APP_URL ?>/purchases/view.php?id=<?= $p['id'] ?>" class="btn btn-sm btn-outline-secondary">View</a>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>

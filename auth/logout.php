@@ -7,5 +7,5 @@ session_start();
 $_SESSION['flash_message'] = "You have been logged out.";
 $_SESSION['flash_type'] = "success";
 
-header('Location: /Reper_hub/auth/login.php');
+header("Location: " . APP_URL . "/auth/login.php");
 exit;

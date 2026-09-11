@@ -1,7 +1,7 @@
 <?php
 session_start();
 require_once '../config.php';
-if (!isset($_SESSION['user_id'])) { header('Location: /Reper_hub/auth/login.php'); exit; }
+if (!isset($_SESSION['user_id'])) { header("Location: " . APP_URL . "/auth/login.php"); exit; }
 
 $pageTitle = 'Leads';
 include '../includes/header.php';
@@ -54,7 +54,7 @@ function getLeadBadgeClass($status) {
   <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3"><?= htmlspecialchars($pageTitle) ?></h1>
-        <a href="/Reper_hub/leads/create.php" class="btn btn-primary"><i class="fas fa-plus"></i> Add Lead</a>
+        <a href="<?= APP_URL ?>/leads/create.php" class="btn btn-primary"><i class="fas fa-plus"></i> Add Lead</a>
     </div>
 
     <?php if (isset($_SESSION['flash_message'])): ?>
@@ -126,7 +126,7 @@ function getLeadBadgeClass($status) {
                                     <td><?= $l['follow_up_date'] ? date('d M Y', strtotime($l['follow_up_date'])) : '-' ?></td>
                                     <td><?= htmlspecialchars($l['assigned_to_name'] ?? 'Unassigned') ?></td>
                                     <td>
-                                        <a href="/Reper_hub/leads/view.php?id=<?= $l['id'] ?>" class="btn btn-sm btn-outline-secondary">View</a>
+                                        <a href="<?= APP_URL ?>/leads/view.php?id=<?= $l['id'] ?>" class="btn btn-sm btn-outline-secondary">View</a>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>

@@ -204,8 +204,8 @@ include '../includes/client_sidebar.php';
                                             <p class="mb-2 text-dark"><?= nl2br(htmlspecialchars($item['description'])) ?></p>
                                         <?php endif; ?>
                                         <?php if(!empty($item['image_path'])): ?>
-                                            <a href="/Reper_hub/<?= htmlspecialchars($item['image_path']) ?>" target="_blank">
-                                                <img src="/Reper_hub/<?= htmlspecialchars($item['image_path']) ?>" alt="Update image" class="timeline-img img-thumbnail">
+                                            <a href="<?= APP_URL ?>/<?= htmlspecialchars($item['image_path']) ?>" target="_blank">
+                                                <img src="<?= APP_URL ?>/<?= htmlspecialchars($item['image_path']) ?>" alt="Update image" class="timeline-img img-thumbnail">
                                             </a>
                                         <?php endif; ?>
                                     </div>
@@ -262,7 +262,7 @@ include '../includes/client_sidebar.php';
                         
                         <div class="d-grid gap-2">
                             <!-- Link to admin print page if allowed, or create a client print page -->
-                            <a href="/Reper_hub/invoices/print.php?id=<?= $invoice['id'] ?>" target="_blank" class="btn btn-outline-primary"><i class="fas fa-print me-2"></i>Print / Download</a>
+                            <a href="<?= APP_URL ?>/invoices/print.php?id=<?= $invoice['id'] ?>" target="_blank" class="btn btn-outline-primary"><i class="fas fa-print me-2"></i>Print / Download</a>
                         </div>
                     </div>
                 </div>

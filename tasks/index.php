@@ -1,7 +1,7 @@
 <?php
 session_start();
 require_once '../config.php';
-if (!isset($_SESSION['user_id'])) { header('Location: /Reper_hub/auth/login.php'); exit; }
+if (!isset($_SESSION['user_id'])) { header("Location: " . APP_URL . "/auth/login.php"); exit; }
 
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
@@ -17,7 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     
     $_SESSION['flash_message'] = 'Task status updated.';
     $_SESSION['flash_type'] = 'success';
-    header('Location: /Reper_hub/tasks/index.php');
+    header("Location: " . APP_URL . "/tasks/index.php");
     exit;
 }
 
@@ -73,7 +73,7 @@ $users = $pdo->query("SELECT id, name FROM users")->fetchAll();
   <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3"><?= htmlspecialchars($pageTitle) ?></h1>
-        <a href="/Reper_hub/tasks/create.php" class="btn btn-primary"><i class="fas fa-plus"></i> Add Task</a>
+        <a href="<?= APP_URL ?>/tasks/create.php" class="btn btn-primary"><i class="fas fa-plus"></i> Add Task</a>
     </div>
 
     <?php if (isset($_SESSION['flash_message'])): ?>
@@ -151,7 +151,7 @@ $users = $pdo->query("SELECT id, name FROM users")->fetchAll();
                                     </td>
                                     <td>
                                         <?php if($t['ticket_id']): ?>
-                                            <a href="/Reper_hub/tickets/view.php?id=<?= $t['ticket_id'] ?>"><?= htmlspecialchars($t['ticket_id']) ?></a>
+                                            <a href="<?= APP_URL ?>/tickets/view.php?id=<?= $t['ticket_id'] ?>"><?= htmlspecialchars($t['ticket_id']) ?></a>
                                         <?php else: ?>
                                             -
                                         <?php endif; ?>

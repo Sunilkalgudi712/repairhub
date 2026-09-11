@@ -1,7 +1,7 @@
 <?php
 session_start();
 require_once '../config.php';
-if (!isset($_SESSION['user_id'])) { header('Location: /Reper_hub/auth/login.php'); exit; }
+if (!isset($_SESSION['user_id'])) { header("Location: " . APP_URL . "/auth/login.php"); exit; }
 
 $pageTitle = 'Expenses';
 include '../includes/header.php';
@@ -74,7 +74,7 @@ $categories = ['Rent', 'Utilities', 'Salary', 'Office Supplies', 'Marketing', 'M
   <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3"><?= htmlspecialchars($pageTitle) ?></h1>
-        <a href="/Reper_hub/expenses/create.php" class="btn btn-primary"><i class="fas fa-plus"></i> Add Expense</a>
+        <a href="<?= APP_URL ?>/expenses/create.php" class="btn btn-primary"><i class="fas fa-plus"></i> Add Expense</a>
     </div>
 
     <?php if (isset($_SESSION['flash_message'])): ?>
