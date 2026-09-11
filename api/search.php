@@ -21,17 +21,26 @@ $term = "%{$query}%";
 try {
     // Search tickets
     $stmt = $pdo->prepare("
-        SELECT t.id, t.ticket_id, t.device_type, t.status, c.name as customer_name
+        SELECT t.id, t.ticket_id, t.device_type, t.device_brand, t.device_model, t.status, c.name as customer_name
         FROM repair_tickets t
         JOIN customers c ON t.customer_id = c.id
-        WHERE t.ticket_id LIKE ? OR t.device_brand LIKE ? OR t.device_model LIKE ? OR c.name LIKE ?
-        LIMIT 5
+        WHERE t.ticket_id LIKE ? 
+           OR t.device_brand LIKE ? 
+           OR t.device_model LIKE ? 
+           OR t.device_type LIKE ?
+           OR t.serial_number LIKE ?
+           OR t.problem_description LIKE ?
+           OR c.name LIKE ? 
+           OR c.phone LIKE ?
+        ORDER BY t.created_at DESC
+        LIMIT 6
     ");
-    $stmt->execute([$term, $term, $term, $term]);
-    foreach ($stmt->fetchAll() as $row) {
+    $stmt->execute([$term, $term, $term, $term, $term, $term, $term, $term]);
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $brandModel = trim(($row['device_brand'] ?? '') . ' ' . ($row['device_model'] ?? ''));
         $results[] = [
             'title' => $row['ticket_id'] . ' — ' . $row['customer_name'],
-            'subtitle' => $row['device_type'] . ' • ' . $row['status'],
+            'subtitle' => ($brandModel ? $brandModel . ' • ' : '') . $row['status'],
             'icon' => 'fa-ticket-alt',
             'url' => APP_URL . '/tickets/view.php?id=' . $row['id'],
         ];

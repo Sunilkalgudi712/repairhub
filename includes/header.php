@@ -48,15 +48,17 @@ $currentUser = [
     </div>
     
     <!-- Search Bar -->
-    <div class="top-search d-none d-md-block">
-        <div class="input-group">
-            <span class="input-group-text bg-transparent border-0 text-white-50">
-                <i class="fas fa-search"></i>
-            </span>
-            <input type="text" class="form-control" id="globalSearch" 
-                   placeholder="Search tickets, customers..." autocomplete="off">
-            <div id="searchResults" class="search-results-dropdown"></div>
-        </div>
+    <div class="top-search d-none d-md-block position-relative">
+        <form action="<?= APP_URL ?>/tickets/index.php" method="GET" class="m-0" id="globalSearchForm">
+            <div class="input-group">
+                <span class="input-group-text bg-transparent border-0 text-white-50">
+                    <i class="fas fa-search"></i>
+                </span>
+                <input type="text" class="form-control" id="globalSearch" name="search"
+                       placeholder="Search tickets, customers, devices..." autocomplete="off">
+            </div>
+        </form>
+        <div id="searchResults" class="search-results-dropdown"></div>
     </div>
     
     <!-- Right Side -->

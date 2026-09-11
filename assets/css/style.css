@@ -99,14 +99,19 @@ a:hover {
 }
 
 .top-search {
-    flex: 0 1 400px;
+    flex: 0 1 420px;
+    position: relative;
 }
 
 .top-search .input-group {
-    background: rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.12);
     border-radius: var(--rh-radius);
     overflow: hidden;
-    position: relative;
+    transition: background var(--rh-transition);
+}
+
+.top-search .input-group:focus-within {
+    background: rgba(255,255,255,0.2);
 }
 
 .top-search .form-control {
@@ -118,26 +123,28 @@ a:hover {
 }
 
 .top-search .form-control::placeholder {
-    color: rgba(255,255,255,0.5);
+    color: rgba(255,255,255,0.6);
 }
 
 .top-search .form-control:focus {
     box-shadow: none;
-    background: rgba(255,255,255,0.15);
+    background: transparent;
+    color: #fff;
 }
 
 .search-results-dropdown {
     display: none;
     position: absolute;
-    top: 100%;
+    top: calc(100% + 6px);
     left: 0;
     right: 0;
-    background: var(--rh-card-bg);
-    border-radius: 0 0 var(--rh-radius) var(--rh-radius);
-    box-shadow: var(--rh-shadow-lg);
-    max-height: 400px;
+    background: #ffffff;
+    border-radius: var(--rh-radius);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.2);
+    max-height: 420px;
     overflow-y: auto;
-    z-index: 1050;
+    z-index: 1070;
+    border: 1px solid rgba(0,0,0,0.1);
 }
 
 .search-results-dropdown.show {

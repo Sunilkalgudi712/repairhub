@@ -144,12 +144,15 @@ $invoices = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <!-- Filters -->
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-body">
-                <form method="GET" class="row g-3">
+                <form method="GET" class="row g-3 align-items-center">
                     <div class="col-md-3">
-                        <input type="text" name="search" class="form-control" placeholder="Search invoices..." value="<?= htmlspecialchars($search) ?>">
+                        <div class="input-group">
+                            <input type="text" name="search" class="form-control" placeholder="Search invoices..." value="<?= htmlspecialchars($search) ?>">
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i></button>
+                        </div>
                     </div>
                     <div class="col-md-2">
-                        <select name="status" class="form-select">
+                        <select name="status" class="form-select" onchange="this.form.submit()">
                             <option value="">All Statuses</option>
                             <?php foreach (['Draft', 'Sent', 'Paid', 'Overdue', 'Cancelled'] as $st): ?>
                             <option value="<?= $st ?>" <?= $status === $st ? 'selected' : '' ?>><?= $st ?></option>
@@ -157,13 +160,16 @@ $invoices = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <input type="date" name="date_from" class="form-control" value="<?= htmlspecialchars($dateFrom) ?>">
+                        <input type="date" name="date_from" class="form-control" value="<?= htmlspecialchars($dateFrom) ?>" title="From Date" onchange="this.form.submit()">
                     </div>
                     <div class="col-md-3">
-                        <input type="date" name="date_to" class="form-control" value="<?= htmlspecialchars($dateTo) ?>">
+                        <input type="date" name="date_to" class="form-control" value="<?= htmlspecialchars($dateTo) ?>" title="To Date" onchange="this.form.submit()">
                     </div>
-                    <div class="col-md-1">
-                        <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search"></i></button>
+                    <div class="col-md-1 d-flex gap-1">
+                        <button type="submit" class="btn btn-outline-secondary flex-fill" title="Filter"><i class="fas fa-filter"></i></button>
+                        <?php if ($search !== '' || $status !== '' || $dateFrom !== '' || $dateTo !== ''): ?>
+                            <a href="index.php" class="btn btn-outline-danger" title="Clear Filters"><i class="fas fa-times"></i></a>
+                        <?php endif; ?>
                     </div>
                 </form>
             </div>

@@ -70,21 +70,27 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
+            searchResults.innerHTML = '<div class="p-3 text-muted text-center"><i class="fas fa-spinner fa-spin me-1"></i> Searching...</div>';
+            searchResults.classList.add('show');
+
             searchTimeout = setTimeout(() => {
-                const appUrl = (typeof window.APP_URL !== 'undefined') ? window.APP_URL : (document.querySelector('.sidebar-brand a')?.getAttribute('href') || '');
+                const appUrl = (typeof window.APP_URL !== 'undefined') ? window.APP_URL : '';
                 fetch(appUrl + '/api/search.php?q=' + encodeURIComponent(query))
                     .then(r => r.json())
                     .then(data => {
-                        if (data.length === 0) {
-                            searchResults.innerHTML = '<div class="p-3 text-muted text-center">No results found</div>';
+                        if (!Array.isArray(data) || data.length === 0) {
+                            searchResults.innerHTML = '<div class="p-3 text-muted text-center"><i class="fas fa-info-circle me-1"></i> No results found</div>';
                         } else {
                             searchResults.innerHTML = data.map(item =>
-                                `<a href="${item.url}" class="search-result-item">
-                                    <i class="fas ${item.icon} text-primary"></i>
-                                    <div>
-                                        <div class="fw-semibold">${item.title}</div>
-                                        <small class="text-muted">${item.subtitle || ''}</small>
+                                `<a href="${item.url}" class="search-result-item text-decoration-none">
+                                    <div class="bg-light rounded p-2 text-primary d-flex align-items-center justify-content-center" style="width:36px;height:36px;">
+                                        <i class="fas ${item.icon}"></i>
                                     </div>
+                                    <div class="flex-grow-1 min-w-0">
+                                        <div class="fw-semibold text-dark text-truncate">${item.title}</div>
+                                        <small class="text-muted text-truncate d-block">${item.subtitle || ''}</small>
+                                    </div>
+                                    <i class="fas fa-chevron-right text-muted small"></i>
                                 </a>`
                             ).join('');
                         }
@@ -93,13 +99,58 @@ document.addEventListener('DOMContentLoaded', function () {
                     .catch(() => {
                         searchResults.classList.remove('show');
                     });
-            }, 300);
+            }, 250);
         });
 
         // Close search on outside click
         document.addEventListener('click', function (e) {
             if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
                 searchResults.classList.remove('show');
+            }
+        });
+
+        // Close search on Escape
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                searchResults.classList.remove('show');
+            }
+        });
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // Real-time instant filtering for tables (Tickets, Inventory, etc.)
+    // ═══════════════════════════════════════════════════════
+    const instantSearchInput = document.getElementById('ticketSearchInput') || document.querySelector('input[data-instant-filter]');
+    if (instantSearchInput) {
+        instantSearchInput.addEventListener('keyup', function (e) {
+            if (e.key === 'Enter') return; // Allow form submission for full database search
+            const query = this.value.toLowerCase().trim();
+            const table = document.querySelector('.table tbody');
+            if (!table) return;
+
+            const rows = table.querySelectorAll('tr');
+            let visibleCount = 0;
+
+            rows.forEach(row => {
+                if (row.querySelector('td[colspan]')) return; // Ignore "No records found" row
+                const text = row.textContent.toLowerCase();
+                const match = query === '' || text.includes(query);
+                row.style.display = match ? '' : 'none';
+                if (match) visibleCount++;
+            });
+
+            // If all filtered out, show a temporary message row
+            let noMatchRow = document.getElementById('table-no-match-row');
+            if (visibleCount === 0 && query !== '') {
+                if (!noMatchRow) {
+                    noMatchRow = document.createElement('tr');
+                    noMatchRow.id = 'table-no-match-row';
+                    noMatchRow.innerHTML = '<td colspan="10" class="text-center py-4 text-muted"><i class="fas fa-search me-1"></i> No matching records on this page. Press <strong>Enter</strong> to search the entire database.</td>';
+                    table.appendChild(noMatchRow);
+                }
+                noMatchRow.style.display = '';
+            } else if (noMatchRow) {
+                noMatchRow.style.display = 'none';
             }
         });
     }

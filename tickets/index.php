@@ -28,9 +28,17 @@ $where_clauses = ["1=1"];
 $params = [];
 
 if ($search !== '') {
-    $where_clauses[] = "(t.ticket_id LIKE ? OR c.name LIKE ? OR c.phone LIKE ? OR t.device_model LIKE ?)";
+    $where_clauses[] = "(t.ticket_id LIKE ? 
+        OR c.name LIKE ? 
+        OR c.phone LIKE ? 
+        OR c.email LIKE ? 
+        OR t.device_brand LIKE ? 
+        OR t.device_model LIKE ? 
+        OR t.device_type LIKE ? 
+        OR t.serial_number LIKE ? 
+        OR t.problem_description LIKE ?)";
     $searchParam = "%$search%";
-    array_push($params, $searchParam, $searchParam, $searchParam, $searchParam);
+    array_push($params, $searchParam, $searchParam, $searchParam, $searchParam, $searchParam, $searchParam, $searchParam, $searchParam, $searchParam);
 }
 if ($status !== '') {
     $where_clauses[] = "t.status = ?";
@@ -104,12 +112,18 @@ $end_count = min($offset + $limit, $total_tickets);
 
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-body">
-                <form method="GET" action="index.php" class="row g-3">
+                <form method="GET" action="index.php" class="row g-3 align-items-center" id="ticketFilterForm">
                     <div class="col-md-3">
-                        <input type="text" class="form-control" name="search" placeholder="Search ID, Customer, Device..." value="<?= htmlspecialchars($search) ?>">
+                        <div class="input-group">
+                            <input type="text" class="form-control" name="search" id="ticketSearchInput" 
+                                   placeholder="Search ID, Customer, Device..." value="<?= htmlspecialchars($search) ?>" autocomplete="off">
+                            <button type="submit" class="btn btn-primary" title="Search Database">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="col-md-2">
-                        <select name="status" class="form-select">
+                        <select name="status" class="form-select" onchange="this.form.submit()">
                             <option value="">All Statuses</option>
                             <?php foreach ($all_statuses as $s): ?>
                                 <option value="<?= $s ?>" <?= $status === $s ? 'selected' : '' ?>><?= $s ?></option>
@@ -117,7 +131,7 @@ $end_count = min($offset + $limit, $total_tickets);
                         </select>
                     </div>
                     <div class="col-md-2">
-                        <select name="priority" class="form-select">
+                        <select name="priority" class="form-select" onchange="this.form.submit()">
                             <option value="">All Priorities</option>
                             <?php foreach ($all_priorities as $p): ?>
                                 <option value="<?= $p ?>" <?= $priority === $p ? 'selected' : '' ?>><?= $p ?></option>
@@ -125,7 +139,7 @@ $end_count = min($offset + $limit, $total_tickets);
                         </select>
                     </div>
                     <div class="col-md-2">
-                        <select name="assigned_to" class="form-select">
+                        <select name="assigned_to" class="form-select" onchange="this.form.submit()">
                             <option value="">All Users</option>
                             <?php foreach ($users as $u): ?>
                                 <option value="<?= $u['id'] ?>" <?= $assigned_to == $u['id'] ? 'selected' : '' ?>><?= htmlspecialchars($u['name']) ?></option>
@@ -134,12 +148,15 @@ $end_count = min($offset + $limit, $total_tickets);
                     </div>
                     <div class="col-md-2">
                         <div class="input-group">
-                            <input type="date" name="date_from" class="form-control" value="<?= htmlspecialchars($date_from) ?>" title="From Date">
-                            <input type="date" name="date_to" class="form-control" value="<?= htmlspecialchars($date_to) ?>" title="To Date">
+                            <input type="date" name="date_from" class="form-control" value="<?= htmlspecialchars($date_from) ?>" title="From Date" onchange="this.form.submit()">
+                            <input type="date" name="date_to" class="form-control" value="<?= htmlspecialchars($date_to) ?>" title="To Date" onchange="this.form.submit()">
                         </div>
                     </div>
-                    <div class="col-md-1">
-                        <button type="submit" class="btn btn-outline-secondary w-100"><i class="fas fa-filter"></i></button>
+                    <div class="col-md-1 d-flex gap-1">
+                        <button type="submit" class="btn btn-outline-secondary flex-fill" title="Apply Filters"><i class="fas fa-filter"></i></button>
+                        <?php if ($search !== '' || $status !== '' || $priority !== '' || $assigned_to !== '' || $date_from !== '' || $date_to !== ''): ?>
+                            <a href="index.php" class="btn btn-outline-danger" title="Clear All Filters"><i class="fas fa-times"></i></a>
+                        <?php endif; ?>
                     </div>
                 </form>
             </div>

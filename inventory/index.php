@@ -135,12 +135,15 @@ include '../includes/sidebar.php';
     <!-- Filter Bar -->
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-body">
-            <form method="GET" class="row g-3">
+            <form method="GET" class="row g-3 align-items-center">
                 <div class="col-md-4">
-                    <input type="text" name="search" class="form-control" placeholder="Search by name or SKU" value="<?= htmlspecialchars($search) ?>">
+                    <div class="input-group">
+                        <input type="text" name="search" class="form-control" placeholder="Search by name or SKU..." value="<?= htmlspecialchars($search) ?>">
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i></button>
+                    </div>
                 </div>
                 <div class="col-md-3">
-                    <select name="category" class="form-select">
+                    <select name="category" class="form-select" onchange="this.form.submit()">
                         <option value="">All Categories</option>
                         <?php foreach($categories as $cat): ?>
                             <option value="<?= htmlspecialchars($cat) ?>" <?= $category === $cat ? 'selected' : '' ?>><?= htmlspecialchars($cat) ?></option>
@@ -148,15 +151,18 @@ include '../includes/sidebar.php';
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <select name="status" class="form-select">
+                    <select name="status" class="form-select" onchange="this.form.submit()">
                         <option value="all" <?= $status === 'all' ? 'selected' : '' ?>>All Stock Status</option>
                         <option value="in_stock" <?= $status === 'in_stock' ? 'selected' : '' ?>>In Stock</option>
                         <option value="low_stock" <?= $status === 'low_stock' ? 'selected' : '' ?>>Low Stock</option>
                         <option value="out_of_stock" <?= $status === 'out_of_stock' ? 'selected' : '' ?>>Out of Stock</option>
                     </select>
                 </div>
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search"></i> Filter</button>
+                <div class="col-md-2 d-flex gap-1">
+                    <button type="submit" class="btn btn-outline-secondary flex-fill"><i class="fas fa-filter"></i> Filter</button>
+                    <?php if ($search !== '' || $category !== '' || ($status !== '' && $status !== 'all')): ?>
+                        <a href="index.php" class="btn btn-outline-danger" title="Clear Filters"><i class="fas fa-times"></i></a>
+                    <?php endif; ?>
                 </div>
             </form>
         </div>

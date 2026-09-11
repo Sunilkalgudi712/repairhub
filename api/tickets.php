@@ -69,16 +69,21 @@ if (strlen($search) < 2) {
 
 try {
     $stmt = $pdo->prepare("
-        SELECT t.id, t.ticket_id, t.status, t.device_type, t.device_brand, 
+        SELECT t.id, t.ticket_id, t.status, t.device_type, t.device_brand, t.device_model,
                c.name as customer_name, c.phone as customer_phone
         FROM repair_tickets t
         JOIN customers c ON t.customer_id = c.id
-        WHERE t.ticket_id LIKE ? OR c.name LIKE ? OR c.phone LIKE ?
+        WHERE t.ticket_id LIKE ? 
+           OR c.name LIKE ? 
+           OR c.phone LIKE ? 
+           OR t.device_brand LIKE ? 
+           OR t.device_model LIKE ? 
+           OR t.problem_description LIKE ?
         ORDER BY t.created_at DESC
         LIMIT 10
     ");
     $term = "%{$search}%";
-    $stmt->execute([$term, $term, $term]);
+    $stmt->execute([$term, $term, $term, $term, $term, $term]);
     $tickets = $stmt->fetchAll();
     
     jsonResponse($tickets);
