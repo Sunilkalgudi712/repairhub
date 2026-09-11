@@ -71,7 +71,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             searchTimeout = setTimeout(() => {
-                const appUrl = document.querySelector('.sidebar-brand a')?.getAttribute('href') || '/Reper_hub';
+                const appUrl = (typeof window.APP_URL !== 'undefined') ? window.APP_URL : (document.querySelector('.sidebar-brand a')?.getAttribute('href') || '');
                 fetch(appUrl + '/api/search.php?q=' + encodeURIComponent(query))
                     .then(r => r.json())
                     .then(data => {
@@ -221,7 +221,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (q.length < 2) { customerResults.innerHTML = ''; return; }
 
             csTimeout = setTimeout(() => {
-                const appUrl = '/Reper_hub';
+                const appUrl = (typeof window.APP_URL !== 'undefined') ? window.APP_URL : '';
                 fetch(appUrl + '/api/customers.php?search=' + encodeURIComponent(q))
                     .then(r => r.json())
                     .then(data => {

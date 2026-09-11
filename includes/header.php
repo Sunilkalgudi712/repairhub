@@ -29,6 +29,7 @@ $currentUser = [
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <!-- Custom CSS -->
     <link href="<?= APP_URL ?>/assets/css/style.css" rel="stylesheet">
+    <script>window.APP_URL = <?= json_encode(APP_URL) ?>;</script>
 </head>
 <body>
 
