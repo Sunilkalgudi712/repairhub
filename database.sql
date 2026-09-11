@@ -234,6 +234,33 @@ INSERT INTO `inventory` VALUES (1,'Laptop Screen 15.6\" FHD','SCR-156-FHD','Scre
 UNLOCK TABLES;
 
 --
+-- Table structure for table `inventory_history`
+--
+
+DROP TABLE IF EXISTS `inventory_history`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `inventory_history` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `inventory_id` int NOT NULL,
+  `item_name` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `user_id` int DEFAULT NULL,
+  `user_name` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `action_type` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `field_name` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `old_value` text COLLATE utf8mb4_unicode_ci,
+  `new_value` text COLLATE utf8mb4_unicode_ci,
+  `change_description` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_inventory_id` (`inventory_id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_action_type` (`action_type`),
+  KEY `idx_created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `invoice_items`
 --
 

@@ -76,9 +76,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $adjStmt = $pdo->prepare("INSERT INTO stock_adjustments (inventory_id, user_id, type, quantity, reason) VALUES (?, ?, ?, ?, ?)");
                 $adjStmt->execute([$id, $_SESSION['user_id'], $type, $quantity, $reason]);
 
-                // Log activity
-                $logStmt = $pdo->prepare("INSERT INTO activity_logs (user_id, action, description, created_at) VALUES (?, 'Stock Adjusted', ?, NOW())");
-                $logStmt->execute([$_SESSION['user_id'], "Adjusted stock for {$item['name']}: $type $quantity. New total: $newQty"]);
+                // Log inventory history
+                $adjDesc = "Stock adjusted by " . ($_SESSION['user_name'] ?? 'User') . " ($type $quantity). Quantity changed from $currentQty to $newQty." . ($reason ? " Reason: $reason" : "");
+                logInventoryHistory($pdo, $id, $item['name'], 'quantity_change', 'quantity', $currentQty, $newQty, $adjDesc);
 
                 $pdo->commit();
 

@@ -22,13 +22,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute([$id]);
 
             // Update inventory
-            $itemsStmt = $pdo->prepare("SELECT inventory_id, quantity FROM purchase_items WHERE purchase_id = ? AND inventory_id IS NOT NULL");
+            $itemsStmt = $pdo->prepare("SELECT pi.inventory_id, pi.quantity, i.name as item_name 
+                                        FROM purchase_items pi 
+                                        LEFT JOIN inventory i ON pi.inventory_id = i.id 
+                                        WHERE pi.purchase_id = ? AND pi.inventory_id IS NOT NULL");
             $itemsStmt->execute([$id]);
             $items = $itemsStmt->fetchAll();
 
             $invUpdate = $pdo->prepare("UPDATE inventory SET quantity = quantity + ? WHERE id = ?");
             foreach ($items as $item) {
                 $invUpdate->execute([$item['quantity'], $item['inventory_id']]);
+
+                $pDesc = "Received {$item['quantity']} units via Purchase Order #{$id}.";
+                logInventoryHistory($pdo, $item['inventory_id'], $item['item_name'], 'quantity_change', 'quantity', null, null, $pDesc);
             }
             
             $pdo->commit();

@@ -102,6 +102,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($item['inventory_id']) {
                 $updInv = $pdo->prepare("UPDATE inventory SET quantity = quantity - ? WHERE id = ? AND quantity >= ?");
                 $updInv->execute([$item['quantity'], $item['inventory_id'], $item['quantity']]);
+
+                $invDesc = "Deducted {$item['quantity']} units sold via Invoice #{$invoiceNumber}.";
+                logInventoryHistory($pdo, $item['inventory_id'], $item['description'], 'quantity_change', 'quantity', null, null, $invDesc);
             }
         }
 

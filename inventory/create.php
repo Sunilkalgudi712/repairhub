@@ -36,9 +36,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 $itemId = $pdo->lastInsertId();
 
-                // Log activity
-                $logStmt = $pdo->prepare("INSERT INTO activity_logs (user_id, action, description, created_at) VALUES (?, 'Item Added', ?, NOW())");
-                $logStmt->execute([$_SESSION['user_id'], "Added inventory item: $name (ID: $itemId)"]);
+                // Log inventory history
+                $createDesc = "Item created by " . ($_SESSION['user_name'] ?? 'User') . " with initial stock of {$quantity} units. Category: " . ($category ?: 'Uncategorized') . ", Cost: " . CURRENCY_SYMBOL . number_format($cost_price, 2) . ", Price: " . CURRENCY_SYMBOL . number_format($selling_price, 2) . ".";
+                logInventoryHistory($pdo, $itemId, $name, 'created', 'all', null, $quantity, $createDesc);
 
                 $_SESSION['flash_message'] = "Item added successfully.";
                 $_SESSION['flash_type'] = "success";

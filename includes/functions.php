@@ -402,6 +402,66 @@ function logActivity($pdo, $action, $details = '', $relatedType = null, $related
     }
 }
 
+/**
+ * Log an inventory change in inventory_history
+ */
+function logInventoryHistory($pdo, $inventoryId, $itemName, $actionType, $fieldName = null, $oldValue = null, $newValue = null, $description = '', $userId = null, $userName = null) {
+    try {
+        static $tableChecked = false;
+        if (!$tableChecked) {
+            $pdo->exec("CREATE TABLE IF NOT EXISTS `inventory_history` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `inventory_id` INT NOT NULL,
+                `item_name` VARCHAR(200) NOT NULL,
+                `user_id` INT DEFAULT NULL,
+                `user_name` VARCHAR(100) DEFAULT NULL,
+                `action_type` VARCHAR(50) NOT NULL,
+                `field_name` VARCHAR(50) DEFAULT NULL,
+                `old_value` TEXT DEFAULT NULL,
+                `new_value` TEXT DEFAULT NULL,
+                `change_description` TEXT NOT NULL,
+                `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                KEY `idx_inventory_id` (`inventory_id`),
+                KEY `idx_user_id` (`user_id`),
+                KEY `idx_action_type` (`action_type`),
+                KEY `idx_created_at` (`created_at`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+            $tableChecked = true;
+        }
+
+        if (empty($userId)) {
+            $userId = $_SESSION['user_id'] ?? null;
+        }
+        if (empty($userName)) {
+            $userName = $_SESSION['user_name'] ?? 'System';
+        }
+        if (empty($itemName) && $inventoryId) {
+            $st = $pdo->prepare("SELECT name FROM inventory WHERE id = ?");
+            $st->execute([$inventoryId]);
+            $itemName = $st->fetchColumn() ?: 'Item #' . $inventoryId;
+        }
+
+        $stmt = $pdo->prepare("INSERT INTO inventory_history (inventory_id, item_name, user_id, user_name, action_type, field_name, old_value, new_value, change_description, created_at)
+                               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
+        $stmt->execute([
+            $inventoryId,
+            $itemName,
+            $userId,
+            $userName,
+            $actionType,
+            $fieldName,
+            $oldValue !== null ? (string)$oldValue : null,
+            $newValue !== null ? (string)$newValue : null,
+            $description
+        ]);
+
+        // Also log to global activity log
+        logActivity($pdo, "Inventory: " . ucfirst(str_replace('_', ' ', $actionType)), $description, 'inventory', $inventoryId);
+    } catch (Exception $e) {
+        // Silently fail — logging shouldn't break the app
+    }
+}
+
 // ─── CSRF Protection ────────────────────────────────────────
 
 /**

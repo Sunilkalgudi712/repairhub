@@ -60,10 +60,18 @@ if (!function_exists('isActive')) {
             </li>
             
             <!-- Inventory -->
-            <li class="sidebar-item <?= isActive('inventory') ?>">
+            <li class="sidebar-item <?= (isActive('inventory') && $currentPage !== 'history.php') ? 'active' : '' ?>">
                 <a href="<?= APP_URL ?>/inventory/index.php" class="sidebar-link">
                     <i class="fas fa-boxes-stacked"></i>
                     <span>Inventory</span>
+                </a>
+            </li>
+            
+            <!-- Stock History -->
+            <li class="sidebar-item <?= (isActive('inventory') && $currentPage === 'history.php') ? 'active' : '' ?>">
+                <a href="<?= APP_URL ?>/inventory/history.php" class="sidebar-link">
+                    <i class="fas fa-history"></i>
+                    <span>Stock History</span>
                 </a>
             </li>
 

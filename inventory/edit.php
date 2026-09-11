@@ -37,12 +37,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         if (isset($_POST['action']) && $_POST['action'] === 'delete') {
             try {
+                $delDesc = "Item deleted by " . ($_SESSION['user_name'] ?? 'User') . ". Final stock was {$item['quantity']} units.";
+                logInventoryHistory($pdo, $id, $item['name'], 'deleted', 'all', $item['quantity'], null, $delDesc);
+
                 $delStmt = $pdo->prepare("DELETE FROM inventory WHERE id = ?");
                 $delStmt->execute([$id]);
-
-                // Log activity
-                $logStmt = $pdo->prepare("INSERT INTO activity_logs (user_id, action, description, created_at) VALUES (?, 'Item Deleted', ?, NOW())");
-                $logStmt->execute([$_SESSION['user_id'], "Deleted inventory item: {$item['name']}"]);
 
                 $_SESSION['flash_message'] = "Item deleted successfully.";
                 $_SESSION['flash_type'] = "success";
@@ -71,9 +70,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $updStmt = $pdo->prepare("UPDATE inventory SET name = ?, sku = ?, category = ?, description = ?, min_stock_level = ?, cost_price = ?, selling_price = ?, supplier = ?, location = ? WHERE id = ?");
                     $updStmt->execute([$name, $sku, $category, $description, $min_stock_level, $cost_price, $selling_price, $supplier, $location, $id]);
 
-                    // Log activity
-                    $logStmt = $pdo->prepare("INSERT INTO activity_logs (user_id, action, description, created_at) VALUES (?, 'Item Updated', ?, NOW())");
-                    $logStmt->execute([$_SESSION['user_id'], "Updated inventory item: $name (ID: $id)"]);
+                    // Track changes in inventory_history
+                    if ($item['category'] !== $category) {
+                        $desc = "Category changed from '" . ($item['category'] ?: 'None') . "' to '" . ($category ?: 'None') . "'";
+                        logInventoryHistory($pdo, $id, $name, 'category_change', 'category', $item['category'], $category, $desc);
+                    }
+
+                    if ((float)$item['cost_price'] != (float)$cost_price) {
+                        $desc = "Cost price changed from " . CURRENCY_SYMBOL . number_format($item['cost_price'], 2) . " to " . CURRENCY_SYMBOL . number_format($cost_price, 2);
+                        logInventoryHistory($pdo, $id, $name, 'price_change', 'cost_price', $item['cost_price'], $cost_price, $desc);
+                    }
+
+                    if ((float)$item['selling_price'] != (float)$selling_price) {
+                        $desc = "Selling price changed from " . CURRENCY_SYMBOL . number_format($item['selling_price'], 2) . " to " . CURRENCY_SYMBOL . number_format($selling_price, 2);
+                        logInventoryHistory($pdo, $id, $name, 'price_change', 'selling_price', $item['selling_price'], $selling_price, $desc);
+                    }
+
+                    if ($item['name'] !== $name) {
+                        $desc = "Item name changed from '{$item['name']}' to '{$name}'";
+                        logInventoryHistory($pdo, $id, $name, 'updated', 'name', $item['name'], $name, $desc);
+                    }
+
+                    if (($item['sku'] ?? '') !== $sku) {
+                        $desc = "SKU changed from '" . ($item['sku'] ?: 'None') . "' to '" . ($sku ?: 'None') . "'";
+                        logInventoryHistory($pdo, $id, $name, 'updated', 'sku', $item['sku'], $sku, $desc);
+                    }
+
+                    if ((int)$item['min_stock_level'] != (int)$min_stock_level) {
+                        $desc = "Min stock level changed from {$item['min_stock_level']} to {$min_stock_level}";
+                        logInventoryHistory($pdo, $id, $name, 'updated', 'min_stock_level', $item['min_stock_level'], $min_stock_level, $desc);
+                    }
+
+                    if (($item['supplier'] ?? '') !== $supplier) {
+                        $desc = "Supplier changed from '" . ($item['supplier'] ?: 'None') . "' to '" . ($supplier ?: 'None') . "'";
+                        logInventoryHistory($pdo, $id, $name, 'updated', 'supplier', $item['supplier'], $supplier, $desc);
+                    }
+
+                    if (($item['location'] ?? '') !== $location) {
+                        $desc = "Location changed from '" . ($item['location'] ?: 'None') . "' to '" . ($location ?: 'None') . "'";
+                        logInventoryHistory($pdo, $id, $name, 'updated', 'location', $item['location'], $location, $desc);
+                    }
 
                     $_SESSION['flash_message'] = "Item updated successfully.";
                     $_SESSION['flash_type'] = "success";
@@ -94,14 +130,24 @@ try {
     $categories = $pdo->query("SELECT DISTINCT category FROM inventory WHERE category != '' AND category IS NOT NULL")->fetchAll(PDO::FETCH_COLUMN);
 } catch (PDOException $e) {}
 
-// Fetch adjustments
-$adjustments = [];
+// Fetch full item history
+$itemHistory = [];
 try {
-    $adjStmt = $pdo->prepare("SELECT sa.*, u.name as user_name FROM stock_adjustments sa LEFT JOIN users u ON sa.user_id = u.id WHERE sa.inventory_id = ? ORDER BY sa.created_at DESC LIMIT 50");
-    $adjStmt->execute([$id]);
-    $adjustments = $adjStmt->fetchAll(PDO::FETCH_ASSOC);
+    $histStmt = $pdo->prepare("SELECT * FROM inventory_history WHERE inventory_id = ? ORDER BY created_at DESC LIMIT 50");
+    $histStmt->execute([$id]);
+    $itemHistory = $histStmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // If empty, auto-seed initial record from existing item
+    if (empty($itemHistory) && !empty($item)) {
+        $initDesc = "Initial item record. Starting stock: {$item['quantity']} units. Category: " . ($item['category'] ?: 'Uncategorized') . ", Cost: " . CURRENCY_SYMBOL . number_format($item['cost_price'], 2) . ", Price: " . CURRENCY_SYMBOL . number_format($item['selling_price'], 2);
+        logInventoryHistory($pdo, $item['id'], $item['name'], 'created', 'all', null, $item['quantity'], $initDesc, 1, 'Admin');
+
+        // Re-fetch
+        $histStmt->execute([$id]);
+        $itemHistory = $histStmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 } catch (PDOException $e) {
-    // If table doesn't exist, ignore
+    // If table doesn't exist yet, ignore
 }
 
 $pageTitle = 'Edit Inventory Item';
@@ -204,37 +250,53 @@ include '../includes/sidebar.php';
         
         <div class="col-md-4">
             <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
-                    <h5 class="card-title mb-0">Stock Adjustments History</h5>
+                <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0"><i class="fas fa-history text-primary me-2"></i> Audit & Stock History</h5>
+                    <a href="history.php?id=<?= $id ?>" class="btn btn-sm btn-outline-primary" title="View Full Log">
+                        <i class="fas fa-external-link-alt"></i> All
+                    </a>
                 </div>
-                <div class="card-body">
-                    <?php if (count($adjustments) > 0): ?>
+                <div class="card-body p-3" style="max-height: 520px; overflow-y: auto;">
+                    <?php if (count($itemHistory) > 0): ?>
                         <ul class="list-group list-group-flush">
-                            <?php foreach ($adjustments as $adj): ?>
-                                <li class="list-group-item px-0">
+                            <?php foreach ($itemHistory as $hist): ?>
+                                <li class="list-group-item px-0 py-2 border-bottom">
                                     <div class="d-flex justify-content-between align-items-center mb-1">
-                                        <strong>
-                                            <?php if($adj['type'] == 'Add'): ?>
-                                                <span class="text-success"><i class="fas fa-arrow-up"></i> Added</span>
-                                            <?php elseif($adj['type'] == 'Remove'): ?>
-                                                <span class="text-danger"><i class="fas fa-arrow-down"></i> Removed</span>
-                                            <?php else: ?>
-                                                <span class="text-primary"><i class="fas fa-equals"></i> Set</span>
-                                            <?php endif; ?>
-                                        </strong>
-                                        <span class="badge bg-secondary"><?= $adj['quantity'] ?></span>
+                                        <?php if ($hist['action_type'] === 'created'): ?>
+                                            <span class="badge bg-success"><i class="fas fa-plus-circle me-1"></i> Added</span>
+                                        <?php elseif ($hist['action_type'] === 'quantity_change'): ?>
+                                            <span class="badge bg-primary"><i class="fas fa-boxes me-1"></i> Stock Change</span>
+                                        <?php elseif ($hist['action_type'] === 'price_change'): ?>
+                                            <span class="badge bg-warning text-dark"><i class="fas fa-tags me-1"></i> Price</span>
+                                        <?php elseif ($hist['action_type'] === 'category_change'): ?>
+                                            <span class="badge bg-info text-white"><i class="fas fa-folder me-1"></i> Category</span>
+                                        <?php else: ?>
+                                            <span class="badge bg-secondary"><i class="fas fa-edit me-1"></i> Updated</span>
+                                        <?php endif; ?>
+                                        
+                                        <small class="text-muted" style="font-size: 0.75rem;">
+                                            <i class="far fa-clock me-1"></i><?= date('d M, H:i', strtotime($hist['created_at'])) ?>
+                                        </small>
                                     </div>
-                                    <p class="mb-1 small text-muted"><?= htmlspecialchars($adj['reason'] ?? '') ?></p>
-                                    <div class="d-flex justify-content-between text-muted" style="font-size: 0.8rem;">
-                                        <span><?= htmlspecialchars($adj['user_name'] ?? 'System') ?></span>
-                                        <span><?= date('M d, Y H:i', strtotime($adj['created_at'])) ?></span>
+                                    <p class="mb-1 small text-dark"><?= htmlspecialchars($hist['change_description']) ?></p>
+                                    <div class="d-flex justify-content-between align-items-center text-muted" style="font-size: 0.75rem;">
+                                        <span><i class="fas fa-user-circle me-1 text-primary"></i><strong><?= htmlspecialchars($hist['user_name'] ?? 'System') ?></strong></span>
+                                        <span class="text-muted"><?= date('Y', strtotime($hist['created_at'])) ?></span>
                                     </div>
                                 </li>
                             <?php endforeach; ?>
                         </ul>
                     <?php else: ?>
-                        <p class="text-muted">No stock adjustments recorded.</p>
+                        <div class="text-center py-4 text-muted">
+                            <i class="fas fa-history fa-2x mb-2 text-muted opacity-50"></i>
+                            <p class="mb-0 small">No history entries recorded yet.</p>
+                        </div>
                     <?php endif; ?>
+                </div>
+                <div class="card-footer bg-light text-center py-2">
+                    <a href="history.php?id=<?= $id ?>" class="small text-decoration-none fw-semibold">
+                        <i class="fas fa-list me-1"></i> Open Complete Audit Trail
+                    </a>
                 </div>
             </div>
         </div>

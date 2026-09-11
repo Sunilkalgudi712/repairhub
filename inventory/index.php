@@ -85,7 +85,10 @@ include '../includes/sidebar.php';
     
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2><i class="fas fa-boxes me-2"></i> Inventory</h2>
-        <a href="create.php" class="btn btn-primary"><i class="fas fa-plus me-1"></i> Add Item</a>
+        <div>
+            <a href="history.php" class="btn btn-outline-primary me-2"><i class="fas fa-history me-1"></i> Stock History</a>
+            <a href="create.php" class="btn btn-primary"><i class="fas fa-plus me-1"></i> Add Item</a>
+        </div>
     </div>
 
     <?php if(isset($_SESSION['flash_message'])): ?>
@@ -210,8 +213,11 @@ include '../includes/sidebar.php';
                                 <td>₹<?= number_format($item['selling_price'] ?? 0, 2) ?></td>
                                 <td><?= htmlspecialchars($item['supplier'] ?? 'N/A') ?></td>
                                 <td>
-                                    <a href="edit.php?id=<?= $item['id'] ?>" class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i> Edit</a>
-                                    <a href="adjust.php?id=<?= $item['id'] ?>" class="btn btn-sm btn-outline-secondary"><i class="fas fa-boxes"></i> Adjust Stock</a>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="edit.php?id=<?= $item['id'] ?>" class="btn btn-outline-primary" title="Edit Item"><i class="fas fa-edit"></i></a>
+                                        <a href="adjust.php?id=<?= $item['id'] ?>" class="btn btn-outline-secondary" title="Adjust Stock"><i class="fas fa-boxes"></i></a>
+                                        <a href="history.php?id=<?= $item['id'] ?>" class="btn btn-outline-info" title="View Audit History"><i class="fas fa-history"></i></a>
+                                    </div>
                                 </td>
                             </tr>
                             <?php endforeach; ?>
