@@ -107,34 +107,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <span class="text-muted small">Staff? </span>
                 <a href="register.php" class="text-decoration-none small">Staff Register</a>
             </div>
-
-            <div class="card bg-light border-0 p-3 mt-3">
-                <div class="small fw-bold text-center mb-2 text-muted text-uppercase"><i class="fas fa-bolt text-warning me-1"></i> 1-Click Instant Login</div>
-                <div class="d-grid gap-2">
-                    <button type="button" class="btn btn-sm btn-outline-primary text-start d-flex justify-content-between align-items-center" onclick="quickLogin('admin@repairhub.com', 'password')">
-                        <span><i class="fas fa-user-shield me-1"></i> <strong>Admin</strong> (admin@repairhub.com)</span>
-                        <span class="badge bg-primary text-white">Login</span>
-                    </button>
-                    <button type="button" class="btn btn-sm btn-outline-success text-start d-flex justify-content-between align-items-center" onclick="quickLogin('tech@repairhub.com', 'password')">
-                        <span><i class="fas fa-tools me-1"></i> <strong>Technician</strong> (tech@repairhub.com)</span>
-                        <span class="badge bg-success text-white">Login</span>
-                    </button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary text-start d-flex justify-content-between align-items-center" onclick="quickLogin('client@repairhub.com', 'password')">
-                        <span><i class="fas fa-user me-1"></i> <strong>Customer</strong> (client@repairhub.com)</span>
-                        <span class="badge bg-secondary text-white">Login</span>
-                    </button>
-                </div>
-                <div class="text-center small text-muted mt-2">Password for all accounts: <code>password</code></div>
-            </div>
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-    function quickLogin(email, pass) {
-        document.getElementById('email').value = email;
-        document.getElementById('password').value = pass;
-        document.getElementById('loginForm').submit();
-    }
-    </script>
 </body>
 </html>
