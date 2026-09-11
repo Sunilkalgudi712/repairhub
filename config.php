@@ -24,7 +24,21 @@ if (file_exists(__DIR__ . '/config.local.php')) {
 // ─── App Constants ──────────────────────────────────────────
 if (!defined('APP_NAME')) define('APP_NAME', 'RepairHub');
 if (!defined('APP_VERSION')) define('APP_VERSION', '1.0.0');
-if (!defined('APP_URL')) define('APP_URL', '/Reper_hub');
+if (!defined('APP_URL')) {
+    $scriptDir = dirname($_SERVER['SCRIPT_NAME'] ?? '');
+    $modules = ['auth', 'worker', 'client', 'admin', 'tickets', 'customers', 'invoices', 'inventory', 'reports', 'settings', 'tasks', 'leads', 'expenses', 'purchases', 'employees', 'api', 'quotations'];
+    if ($scriptDir === '/' || $scriptDir === '\\' || $scriptDir === '' || $scriptDir === '.') {
+        define('APP_URL', '');
+    } else {
+        $base = basename($scriptDir);
+        if (in_array($base, $modules)) {
+            $parent = dirname($scriptDir);
+            define('APP_URL', ($parent === '/' || $parent === '\\' || $parent === '' || $parent === '.') ? '' : rtrim(str_replace('\\', '/', $parent), '/'));
+        } else {
+            define('APP_URL', rtrim(str_replace('\\', '/', $scriptDir), '/'));
+        }
+    }
+}
 if (!defined('APP_ROOT')) define('APP_ROOT', __DIR__);
 if (!defined('CURRENCY_SYMBOL')) define('CURRENCY_SYMBOL', '₹');
 if (!defined('CURRENCY_CODE')) define('CURRENCY_CODE', 'INR');
