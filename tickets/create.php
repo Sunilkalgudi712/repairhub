@@ -78,6 +78,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $sqlHistory = "INSERT INTO ticket_status_history (ticket_id, status, user_id, notes) VALUES (?, 'Pending', ?, 'Ticket created')";
             $pdo->prepare($sqlHistory)->execute([$new_ticket_db_id, $_SESSION['user_id']]);
 
+            // Log detailed ticket history
+            $custName = '';
+            if ($customer_id) {
+                $cStmt = $pdo->prepare("SELECT name FROM customers WHERE id = ?");
+                $cStmt->execute([$customer_id]);
+                $custName = $cStmt->fetchColumn() ?: '';
+            }
+            $createDesc = "Ticket #{$ticket_id} created by " . ($_SESSION['user_name'] ?? 'User') . ($custName ? " for customer {$custName}" : "") . ". Device: {$device_brand} {$device_model} ({$device_type}). Priority: {$priority}. Problem: {$problem_description}";
+            if ($estimated_cost) {
+                $createDesc .= ". Estimated Cost: " . CURRENCY_SYMBOL . number_format($estimated_cost, 2);
+            }
+            logTicketHistory($pdo, $new_ticket_db_id, $ticket_id, 'created', 'all', null, 'Pending', $createDesc);
+
+            if ($assigned_to) {
+                $uStmt = $pdo->prepare("SELECT name FROM users WHERE id = ?");
+                $uStmt->execute([$assigned_to]);
+                $techName = $uStmt->fetchColumn();
+                if ($techName) {
+                    $assignDesc = "Assigned to technician {$techName} on creation.";
+                    logTicketHistory($pdo, $new_ticket_db_id, $ticket_id, 'assigned', 'assigned_to', null, $techName, $assignDesc);
+                }
+            }
+
             // Handle file uploads
             if (isset($_FILES['device_images']) && !empty($_FILES['device_images']['name'][0])) {
                 $upload_dir = '../uploads/devices/';

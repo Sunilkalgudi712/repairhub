@@ -107,7 +107,10 @@ $end_count = min($offset + $limit, $total_tickets);
 
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="mb-0">Repair Tickets</h2>
-            <a href="create.php" class="btn btn-primary"><i class="fas fa-plus"></i> New Ticket</a>
+            <div class="d-flex gap-2">
+                <a href="history.php" class="btn btn-outline-primary"><i class="fas fa-history me-1"></i> Ticket History</a>
+                <a href="create.php" class="btn btn-primary"><i class="fas fa-plus me-1"></i> New Ticket</a>
+            </div>
         </div>
 
         <div class="card border-0 shadow-sm mb-4">
@@ -211,8 +214,9 @@ $end_count = min($offset + $limit, $total_tickets);
                                         </td>
                                         <td><?= date('M d, Y', strtotime($ticket['created_at'])) ?></td>
                                         <td>
-                                            <a href="view.php?id=<?= $ticket['id'] ?>" class="btn btn-sm btn-outline-primary"><i class="fas fa-eye"></i></a>
-                                            <a href="edit.php?id=<?= $ticket['id'] ?>" class="btn btn-sm btn-outline-secondary"><i class="fas fa-edit"></i></a>
+                                            <a href="view.php?id=<?= $ticket['id'] ?>" class="btn btn-sm btn-outline-primary" title="View Details"><i class="fas fa-eye"></i></a>
+                                            <a href="edit.php?id=<?= $ticket['id'] ?>" class="btn btn-sm btn-outline-secondary" title="Edit Ticket"><i class="fas fa-edit"></i></a>
+                                            <a href="history.php?id=<?= $ticket['id'] ?>" class="btn btn-sm btn-outline-info" title="View Audit History"><i class="fas fa-history"></i></a>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>

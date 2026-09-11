@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     try {
         // Get current status
-        $stmt = $pdo->prepare("SELECT status FROM repair_tickets WHERE id = ?");
+        $stmt = $pdo->prepare("SELECT status, ticket_id FROM repair_tickets WHERE id = ?");
         $stmt->execute([$ticketId]);
         $ticket = $stmt->fetch();
         
@@ -52,6 +52,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Log status change
         $stmt = $pdo->prepare("INSERT INTO ticket_status_history (ticket_id, old_status, new_status, changed_by) VALUES (?, ?, ?, ?)");
         $stmt->execute([$ticketId, $oldStatus, $newStatus, getCurrentUserId()]);
+
+        // Log to comprehensive ticket history
+        logTicketHistory(
+            $pdo,
+            $ticketId,
+            $ticket['ticket_id'] ?? null,
+            'status_change',
+            'status',
+            $oldStatus,
+            $newStatus,
+            "Quick status changed from '{$oldStatus}' to '{$newStatus}'"
+        );
         
         logActivity($pdo, 'Ticket Status Changed', "Ticket #{$ticketId}: {$oldStatus} → {$newStatus}", 'ticket', $ticketId);
         

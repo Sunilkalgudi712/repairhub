@@ -462,6 +462,72 @@ function logInventoryHistory($pdo, $inventoryId, $itemName, $actionType, $fieldN
     }
 }
 
+/**
+ * Log a ticket change in ticket_history
+ */
+function logTicketHistory($pdo, $ticketId, $ticketNumber = null, $actionType = 'updated', $fieldName = null, $oldValue = null, $newValue = null, $description = '', $userId = null, $userName = null, $userRole = null) {
+    try {
+        static $ticketHistoryTableReady = false;
+        if (!$ticketHistoryTableReady) {
+            $pdo->exec("CREATE TABLE IF NOT EXISTS `ticket_history` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `ticket_id` INT NOT NULL,
+                `ticket_number` VARCHAR(50) NOT NULL,
+                `user_id` INT DEFAULT NULL,
+                `user_name` VARCHAR(100) DEFAULT NULL,
+                `user_role` VARCHAR(50) DEFAULT NULL,
+                `action_type` VARCHAR(50) NOT NULL,
+                `field_name` VARCHAR(50) DEFAULT NULL,
+                `old_value` TEXT DEFAULT NULL,
+                `new_value` TEXT DEFAULT NULL,
+                `change_description` TEXT NOT NULL,
+                `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                KEY `idx_ticket_id` (`ticket_id`),
+                KEY `idx_ticket_number` (`ticket_number`),
+                KEY `idx_user_id` (`user_id`),
+                KEY `idx_action_type` (`action_type`),
+                KEY `idx_created_at` (`created_at`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+            $ticketHistoryTableReady = true;
+        }
+
+        if (empty($userId)) {
+            $userId = $_SESSION['user_id'] ?? null;
+        }
+        if (empty($userName)) {
+            $userName = $_SESSION['user_name'] ?? 'System';
+        }
+        if (empty($userRole)) {
+            $userRole = $_SESSION['user_role'] ?? 'Staff';
+        }
+        if (empty($ticketNumber) && $ticketId) {
+            $st = $pdo->prepare("SELECT ticket_id FROM repair_tickets WHERE id = ?");
+            $st->execute([$ticketId]);
+            $ticketNumber = $st->fetchColumn() ?: 'TICK-' . $ticketId;
+        }
+
+        $stmt = $pdo->prepare("INSERT INTO ticket_history (ticket_id, ticket_number, user_id, user_name, user_role, action_type, field_name, old_value, new_value, change_description, created_at)
+                               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
+        $stmt->execute([
+            $ticketId,
+            $ticketNumber,
+            $userId,
+            $userName,
+            $userRole,
+            $actionType,
+            $fieldName,
+            $oldValue !== null ? (string)$oldValue : null,
+            $newValue !== null ? (string)$newValue : null,
+            $description
+        ]);
+
+        // Also log to global activity log
+        logActivity($pdo, "Ticket: " . ucfirst(str_replace('_', ' ', $actionType)), $description, 'ticket', $ticketId);
+    } catch (Exception $e) {
+        // Silently fail — logging shouldn't break the app
+    }
+}
+
 // ─── CSRF Protection ────────────────────────────────────────
 
 /**

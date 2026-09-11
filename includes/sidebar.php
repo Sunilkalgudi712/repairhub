@@ -44,10 +44,18 @@ if (!function_exists('isActive')) {
             <li class="sidebar-section">OPERATIONS</li>
             
             <!-- Repair Tickets -->
-            <li class="sidebar-item <?= isActive('tickets') ?>">
+            <li class="sidebar-item <?= (isActive('tickets') && $currentPage !== 'history.php') ? 'active' : '' ?>">
                 <a href="<?= APP_URL ?>/tickets/index.php" class="sidebar-link">
                     <i class="fas fa-ticket-alt"></i>
                     <span>Repair Tickets</span>
+                </a>
+            </li>
+
+            <!-- Ticket History -->
+            <li class="sidebar-item <?= (isActive('tickets') && $currentPage === 'history.php') ? 'active' : '' ?>">
+                <a href="<?= APP_URL ?>/tickets/history.php" class="sidebar-link">
+                    <i class="fas fa-history"></i>
+                    <span>Ticket History</span>
                 </a>
             </li>
             

@@ -28,6 +28,21 @@ if (!$id) {
     exit;
 }
 
+// Fetch ticket
+$sql = "SELECT t.*, c.name, c.phone, c.email, u.name as assignee_name 
+        FROM repair_tickets t 
+        LEFT JOIN customers c ON t.customer_id = c.id 
+        LEFT JOIN users u ON t.assigned_to = u.id 
+        WHERE t.id = ?";
+$stmt = $pdo->prepare($sql);
+$stmt->execute([$id]);
+$ticket = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$ticket) {
+    header("Location: index.php");
+    exit;
+}
+
 // Handle Status Change POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_status') {
     if (!verifyCsrfToken($_POST['csrf_token'] ?? '')) {
@@ -35,14 +50,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $_SESSION['flash_type'] = 'danger';
     } else {
         $new_status = $_POST['status'];
+        $old_status = $ticket['status'];
         try {
             $pdo->beginTransaction();
             $stmt = $pdo->prepare("UPDATE repair_tickets SET status = ?, updated_at = NOW() WHERE id = ?");
             $stmt->execute([$new_status, $id]);
             
-            $note = "Status changed to " . $new_status;
+            $note = "Status changed from {$old_status} to {$new_status}";
             $stmt = $pdo->prepare("INSERT INTO ticket_status_history (ticket_id, status, user_id, notes) VALUES (?, ?, ?, ?)");
             $stmt->execute([$id, $new_status, $_SESSION['user_id'], $note]);
+
+            // Log detailed ticket history
+            logTicketHistory($pdo, $id, $ticket['ticket_id'], 'status_change', 'status', $old_status, $new_status, $note);
             
             $pdo->commit();
             $_SESSION['flash_message'] = 'Status updated successfully.';
@@ -67,6 +86,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         if (!empty($note_text)) {
             $stmt = $pdo->prepare("INSERT INTO ticket_notes (ticket_id, user_id, note) VALUES (?, ?, ?)");
             $stmt->execute([$id, $_SESSION['user_id'], $note_text]);
+
+            // Log ticket history
+            $nDesc = "Added note: " . (strlen($note_text) > 80 ? substr($note_text, 0, 80) . '...' : $note_text);
+            logTicketHistory($pdo, $id, $ticket['ticket_id'], 'note_added', 'notes', null, null, $nDesc);
+
             $_SESSION['flash_message'] = 'Note added successfully.';
             $_SESSION['flash_type'] = 'success';
         }
@@ -75,25 +99,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 }
 
-// Fetch ticket
-$sql = "SELECT t.*, c.name, c.phone, c.email, u.name as assignee_name 
-        FROM repair_tickets t 
-        LEFT JOIN customers c ON t.customer_id = c.id 
-        LEFT JOIN users u ON t.assigned_to = u.id 
-        WHERE t.id = ?";
-$stmt = $pdo->prepare($sql);
+// Fetch complete ticket history
+$stmt = $pdo->prepare("SELECT * FROM ticket_history WHERE ticket_id = ? ORDER BY created_at DESC LIMIT 50");
 $stmt->execute([$id]);
-$ticket = $stmt->fetch(PDO::FETCH_ASSOC);
+$ticketHistory = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-if (!$ticket) {
-    header("Location: index.php");
-    exit;
+if (empty($ticketHistory) && !empty($ticket)) {
+    $custName = $ticket['name'] ?? 'Customer';
+    $initDesc = "Ticket created with priority '{$ticket['priority']}' for customer {$custName}. Device: {$ticket['device_brand']} {$ticket['device_model']}. Problem: {$ticket['problem_description']}";
+    logTicketHistory($pdo, $ticket['id'], $ticket['ticket_id'], 'created', 'all', null, 'Pending', $initDesc, 1, 'Admin', 'Admin');
+
+    try {
+        $oldHist = $pdo->prepare("SELECT tsh.*, u.name as user_name, u.role as user_role FROM ticket_status_history tsh LEFT JOIN users u ON tsh.user_id = u.id WHERE tsh.ticket_id = ? ORDER BY tsh.created_at ASC");
+        $oldHist->execute([$id]);
+        foreach ($oldHist->fetchAll() as $oh) {
+            $desc = $oh['notes'] ?: "Status changed to {$oh['status']}";
+            logTicketHistory($pdo, $id, $ticket['ticket_id'], 'status_change', 'status', $oh['old_status'] ?? null, $oh['status'], $desc, $oh['user_id'], $oh['user_name'] ?: 'Staff', $oh['user_role'] ?? 'Staff');
+        }
+    } catch (Exception $e) {}
+
+    $stmt->execute([$id]);
+    $ticketHistory = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
-
-// Fetch history
-$stmt = $pdo->prepare("SELECT h.*, u.name FROM ticket_status_history h LEFT JOIN users u ON h.user_id = u.id WHERE h.ticket_id = ? ORDER BY h.created_at DESC");
-$stmt->execute([$id]);
-$history = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Fetch notes
 $stmt = $pdo->prepare("SELECT n.*, u.name FROM ticket_notes n LEFT JOIN users u ON n.user_id = u.id WHERE n.ticket_id = ? ORDER BY n.created_at DESC");
@@ -321,22 +348,97 @@ include '../includes/sidebar.php';
 
                 <!-- Timeline -->
                 <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-header bg-white border-bottom">
-                        <h5 class="mb-0">Status Timeline</h5>
+                    <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-history text-primary me-2"></i>Audit Timeline</h5>
+                        <a href="history.php?id=<?= $ticket['id'] ?>" class="btn btn-sm btn-outline-primary" title="View Full History Log">
+                            <i class="fas fa-list-ul me-1"></i> All Logs
+                        </a>
                     </div>
-                    <div class="card-body">
-                        <div class="timeline position-relative" style="border-left: 2px solid #e9ecef; margin-left: 10px; padding-left: 20px;">
-                            <?php foreach ($history as $h): ?>
-                                <div class="timeline-item mb-3 position-relative">
-                                    <div class="timeline-marker position-absolute" style="left: -27px; top: 0; width: 12px; height: 12px; border-radius: 50%; background-color: #0d6efd; border: 2px solid white;"></div>
-                                    <h6 class="mb-0"><?= htmlspecialchars($h['status']) ?></h6>
-                                    <small class="text-muted d-block"><?= date('M d, Y g:i A', strtotime($h['created_at'])) ?> by <?= htmlspecialchars($h['name']) ?></small>
-                                    <?php if ($h['notes']): ?>
-                                        <small class="text-muted"><?= htmlspecialchars($h['notes']) ?></small>
-                                    <?php endif; ?>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
+                    <div class="card-body" style="max-height: 480px; overflow-y: auto;">
+                        <?php if (empty($ticketHistory)): ?>
+                            <p class="text-muted small text-center mb-0">No history records yet.</p>
+                        <?php else: ?>
+                            <div class="timeline position-relative" style="border-left: 2px solid #e9ecef; margin-left: 10px; padding-left: 20px;">
+                                <?php foreach ($ticketHistory as $h): 
+                                    $markerColor = '#0d6efd';
+                                    $badgeClass = 'bg-primary';
+                                    $badgeIcon = 'fa-sync-alt';
+                                    $actionLabel = ucwords(str_replace('_', ' ', $h['action_type']));
+
+                                    switch ($h['action_type']) {
+                                        case 'created':
+                                            $markerColor = '#198754';
+                                            $badgeClass = 'bg-success';
+                                            $badgeIcon = 'fa-plus-circle';
+                                            $actionLabel = 'Ticket Created';
+                                            break;
+                                        case 'status_change':
+                                            $markerColor = '#0d6efd';
+                                            $badgeClass = 'bg-primary';
+                                            $badgeIcon = 'fa-arrows-rotate';
+                                            $actionLabel = 'Status Changed';
+                                            break;
+                                        case 'priority_change':
+                                            $markerColor = '#ffc107';
+                                            $badgeClass = 'bg-warning text-dark';
+                                            $badgeIcon = 'fa-flag';
+                                            $actionLabel = 'Priority Updated';
+                                            break;
+                                        case 'assigned':
+                                            $markerColor = '#0dcaf0';
+                                            $badgeClass = 'bg-info text-dark';
+                                            $badgeIcon = 'fa-user-tag';
+                                            $actionLabel = 'Assignment';
+                                            break;
+                                        case 'cost_update':
+                                            $markerColor = '#6f42c1';
+                                            $badgeClass = 'bg-purple text-white';
+                                            $badgeIcon = 'fa-coins';
+                                            $actionLabel = 'Cost Updated';
+                                            break;
+                                        case 'device_update':
+                                            $markerColor = '#212529';
+                                            $badgeClass = 'bg-dark';
+                                            $badgeIcon = 'fa-laptop';
+                                            $actionLabel = 'Device Updated';
+                                            break;
+                                        case 'note_added':
+                                            $markerColor = '#6c757d';
+                                            $badgeClass = 'bg-secondary';
+                                            $badgeIcon = 'fa-comment-dots';
+                                            $actionLabel = 'Note Added';
+                                            break;
+                                    }
+                                ?>
+                                    <div class="timeline-item mb-3 position-relative">
+                                        <div class="timeline-marker position-absolute" style="left: -27px; top: 2px; width: 12px; height: 12px; border-radius: 50%; background-color: <?= $markerColor ?>; border: 2px solid white; box-shadow: 0 0 0 2px rgba(0,0,0,0.08);"></div>
+                                        <div class="d-flex align-items-center gap-1 mb-1">
+                                            <span class="badge <?= $badgeClass ?> font-monospace" style="font-size: 0.72rem;">
+                                                <i class="fas <?= $badgeIcon ?> me-1"></i><?= $actionLabel ?>
+                                            </span>
+                                            <?php if ($h['field_name'] && $h['field_name'] !== 'all' && $h['field_name'] !== 'status' && $h['field_name'] !== 'notes'): ?>
+                                                <span class="badge bg-light text-muted border" style="font-size: 0.7rem;"><?= htmlspecialchars($h['field_name']) ?></span>
+                                            <?php endif; ?>
+                                        </div>
+                                        <p class="mb-1 small text-break"><?= htmlspecialchars($h['change_description']) ?></p>
+                                        <?php if ($h['old_value'] !== null && $h['new_value'] !== null && $h['old_value'] !== $h['new_value']): ?>
+                                            <div class="small mb-1 text-muted" style="font-size: 0.75rem;">
+                                                <span class="badge bg-light text-secondary border"><?= htmlspecialchars($h['old_value'] ?: 'None') ?></span>
+                                                <i class="fas fa-arrow-right mx-1 text-muted" style="font-size: 0.65rem;"></i>
+                                                <span class="badge bg-light text-dark border"><?= htmlspecialchars($h['new_value']) ?></span>
+                                            </div>
+                                        <?php endif; ?>
+                                        <small class="text-muted d-block" style="font-size: 0.72rem;">
+                                            <i class="fas fa-user-circle me-1"></i><?= htmlspecialchars($h['user_name'] ?? 'System') ?>
+                                            <?php if (!empty($h['user_role'])): ?>
+                                                <span class="badge bg-light text-secondary border px-1"><?= htmlspecialchars($h['user_role']) ?></span>
+                                            <?php endif; ?>
+                                            &bull; <?= date('M d, Y h:i A', strtotime($h['created_at'])) ?>
+                                        </small>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
 

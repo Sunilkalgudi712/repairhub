@@ -80,8 +80,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $due_date, $id
                 ]);
 
-                $sqlLog = "INSERT INTO activity_logs (user_id, action, entity_type, entity_id, details) VALUES (?, 'updated', 'ticket', ?, ?)";
-                $pdo->prepare($sqlLog)->execute([$_SESSION['user_id'], $id, "Updated ticket " . $ticket['ticket_id']]);
+                // Track changes in ticket_history
+                if (($ticket['priority'] ?? '') !== $priority) {
+                    $desc = "Priority changed from '" . ($ticket['priority'] ?: 'Normal') . "' to '{$priority}' by " . ($_SESSION['user_name'] ?? 'User');
+                    logTicketHistory($pdo, $id, $ticket['ticket_id'], 'priority_change', 'priority', $ticket['priority'], $priority, $desc);
+                }
+
+                if ((string)$ticket['assigned_to'] !== (string)$assigned_to) {
+                    $oldName = 'Unassigned';
+                    if (!empty($ticket['assigned_to'])) {
+                        $st = $pdo->prepare("SELECT name FROM users WHERE id = ?");
+                        $st->execute([$ticket['assigned_to']]);
+                        $oldName = $st->fetchColumn() ?: 'Unassigned';
+                    }
+                    $newName = 'Unassigned';
+                    if (!empty($assigned_to)) {
+                        $st = $pdo->prepare("SELECT name FROM users WHERE id = ?");
+                        $st->execute([$assigned_to]);
+                        $newName = $st->fetchColumn() ?: 'Unassigned';
+                    }
+                    $desc = "Assigned technician changed from '{$oldName}' to '{$newName}' by " . ($_SESSION['user_name'] ?? 'User');
+                    logTicketHistory($pdo, $id, $ticket['ticket_id'], 'assigned', 'assigned_to', $oldName, $newName, $desc);
+                }
+
+                if ((float)$ticket['estimated_cost'] != (float)$estimated_cost) {
+                    $oldCost = CURRENCY_SYMBOL . number_format((float)$ticket['estimated_cost'], 2);
+                    $newCost = CURRENCY_SYMBOL . number_format((float)$estimated_cost, 2);
+                    $desc = "Estimated cost updated from {$oldCost} to {$newCost} by " . ($_SESSION['user_name'] ?? 'User');
+                    logTicketHistory($pdo, $id, $ticket['ticket_id'], 'cost_update', 'estimated_cost', $oldCost, $newCost, $desc);
+                }
+
+                if (($ticket['due_date'] ?? '') !== ($due_date ?? '')) {
+                    $oldDate = $ticket['due_date'] ? date('M d, Y', strtotime($ticket['due_date'])) : 'None';
+                    $newDate = $due_date ? date('M d, Y', strtotime($due_date)) : 'None';
+                    $desc = "Due date updated from {$oldDate} to {$newDate} by " . ($_SESSION['user_name'] ?? 'User');
+                    logTicketHistory($pdo, $id, $ticket['ticket_id'], 'updated', 'due_date', $oldDate, $newDate, $desc);
+                }
+
+                if (($ticket['device_brand'] ?? '') !== $device_brand || ($ticket['device_model'] ?? '') !== $device_model) {
+                    $oldDev = trim(($ticket['device_brand'] ?? '') . ' ' . ($ticket['device_model'] ?? ''));
+                    $newDev = trim($device_brand . ' ' . $device_model);
+                    $desc = "Device updated from '{$oldDev}' to '{$newDev}' by " . ($_SESSION['user_name'] ?? 'User');
+                    logTicketHistory($pdo, $id, $ticket['ticket_id'], 'updated', 'device', $oldDev, $newDev, $desc);
+                }
+
+                if (($ticket['problem_description'] ?? '') !== $problem_description) {
+                    $desc = "Problem description updated by " . ($_SESSION['user_name'] ?? 'User');
+                    logTicketHistory($pdo, $id, $ticket['ticket_id'], 'updated', 'problem_description', null, null, $desc);
+                }
 
                 $_SESSION['flash_message'] = 'Ticket updated successfully!';
                 $_SESSION['flash_type'] = 'success';

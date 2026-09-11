@@ -50,6 +50,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
             $histStmt = $pdo->prepare("INSERT INTO ticket_status_history (ticket_id, user_id, changed_by, status, old_status, new_status, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())");
             $histStmt->execute([$ticketId, $userId, $userId, $newStatus, $ticket['status'], $newStatus]);
             
+            // Log to comprehensive ticket history
+            logTicketHistory(
+                $pdo,
+                $ticketId,
+                $ticket['ticket_id'],
+                'status_change',
+                'status',
+                $ticket['status'],
+                $newStatus,
+                "Technician changed status from '{$ticket['status']}' to '{$newStatus}'",
+                $userId,
+                $_SESSION['user_name'] ?? 'Technician',
+                $_SESSION['user_role'] ?? 'Technician'
+            );
+            
             logActivity($pdo, $userId, "Updated ticket #{$ticket['ticket_id']} status to $newStatus");
             
             $pdo->commit();
@@ -89,6 +104,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_progress'])) {
         $stmt = $pdo->prepare("INSERT INTO service_progress (ticket_id, user_id, status_update, description, image_path, time_spent_minutes, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())");
         $stmt->execute([$ticketId, $userId, $statusUpdate, $description, $imagePath, $timeSpent]);
         
+        $pDesc = "Technician progress update: " . (strlen($description) > 80 ? substr($description, 0, 80) . '...' : $description) . " (Status: $statusUpdate, Time: {$timeSpent}m)";
+        logTicketHistory($pdo, $ticketId, $ticket['ticket_id'], 'note_added', 'progress', null, null, $pDesc, $userId, $_SESSION['user_name'] ?? 'Technician', $_SESSION['user_role'] ?? 'Technician');
         logActivity($pdo, $userId, "Added progress update to ticket #{$ticket['ticket_id']}");
         
         $_SESSION['flash_message'] = "Progress updated successfully.";
@@ -110,6 +127,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_note'])) {
             $stmt = $pdo->prepare("INSERT INTO ticket_notes (ticket_id, user_id, note, created_at) VALUES (?, ?, ?, NOW())");
             $stmt->execute([$ticketId, $userId, $note]);
             
+            $nDesc = "Technician added note: " . (strlen($note) > 80 ? substr($note, 0, 80) . '...' : $note);
+            logTicketHistory($pdo, $ticketId, $ticket['ticket_id'], 'note_added', 'notes', null, null, $nDesc, $userId, $_SESSION['user_name'] ?? 'Technician', $_SESSION['user_role'] ?? 'Technician');
+
             $_SESSION['flash_message'] = "Note added successfully.";
             $_SESSION['flash_type'] = "success";
             header("Location: task_detail.php?id=$ticketId");
@@ -129,6 +149,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_cost'])) {
         $stmt = $pdo->prepare("UPDATE repair_tickets SET final_cost = ? WHERE id = ?");
         $stmt->execute([$finalCost, $ticketId]);
         
+        $oldCost = CURRENCY_SYMBOL . number_format((float)($ticket['final_cost'] ?? 0), 2);
+        $newCost = CURRENCY_SYMBOL . number_format($finalCost, 2);
+        logTicketHistory($pdo, $ticketId, $ticket['ticket_id'], 'cost_update', 'final_cost', $oldCost, $newCost, "Final cost updated to {$newCost}", $userId, $_SESSION['user_name'] ?? 'Technician', $_SESSION['user_role'] ?? 'Technician');
+
         $_SESSION['flash_message'] = "Cost updated successfully.";
         $_SESSION['flash_type'] = "success";
         header("Location: task_detail.php?id=$ticketId");

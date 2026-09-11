@@ -50,6 +50,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Insert history
         $histStmt = $pdo->prepare("INSERT INTO ticket_status_history (ticket_id, user_id, changed_by, status, old_status, new_status, created_at) VALUES (?, ?, ?, 'Ready for Pickup', ?, 'Ready for Pickup', NOW())");
         $histStmt->execute([$ticketId, $userId, $userId, $ticket['status']]);
+
+        // Log to comprehensive ticket history
+        $summarySnippet = strlen($completionSummary) > 100 ? substr($completionSummary, 0, 100) . '...' : $completionSummary;
+        logTicketHistory(
+            $pdo,
+            $ticketId,
+            $ticket['ticket_id'],
+            'status_change',
+            'status',
+            $ticket['status'],
+            'Ready for Pickup',
+            "Technician submitted completion report: {$summarySnippet}. Final Cost: " . CURRENCY_SYMBOL . number_format($finalCost, 2),
+            $userId,
+            $_SESSION['user_name'] ?? 'Technician',
+            $_SESSION['user_role'] ?? 'Technician'
+        );
+
+        if ($finalCost > 0) {
+            $oldCostStr = CURRENCY_SYMBOL . number_format((float)($ticket['final_cost'] ?: $ticket['estimated_cost'] ?: 0), 2);
+            $newCostStr = CURRENCY_SYMBOL . number_format($finalCost, 2);
+            logTicketHistory(
+                $pdo,
+                $ticketId,
+                $ticket['ticket_id'],
+                'cost_update',
+                'final_cost',
+                $oldCostStr,
+                $newCostStr,
+                "Final repair cost recorded as {$newCostStr}",
+                $userId,
+                $_SESSION['user_name'] ?? 'Technician',
+                $_SESSION['user_role'] ?? 'Technician'
+            );
+        }
         
         // Insert progress
         $progStmt = $pdo->prepare("INSERT INTO service_progress (ticket_id, user_id, status_update, description, created_at) VALUES (?, ?, 'Ready for Pickup', ?, NOW())");
